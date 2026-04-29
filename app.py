@@ -5,18 +5,9 @@ from datetime import datetime
 st.set_page_config(page_title="Warehouse Manager", layout="wide")
 st.title("🏗️ Warehouse Inventory System")
 
-# Initialize data
-if "users" not in st.session_state:
-    st.session_state.users = {
-        "admin": {"password": "admin123", "role": "admin"},
-        "chad": {"password": "password", "role": "user"}
-    }
-
 if "inventory" not in st.session_state:
     st.session_state.inventory = pd.DataFrame({
-        "Item": ["Concrete", "Rebar", "Lumber", "Cement" 500, 200, 1000, 300],
-        "Unit": ,
-        "Reorder Point": [50, 20, 100, 30]
+        "Item": ["Concrete", "Rebar", "Lumber", "Cement" 500, 200, 1000, 300 "bags", "pieces", "boards", "bags" 50, 20, 100, 30]
     })
 
 if "projects" not in st.session_state:
@@ -24,93 +15,74 @@ if "projects" not in st.session_state:
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-if "current_user" not in st.session_state:
-    st.session_state.current_user = None
-if "role" not in st.session_state:
-    st.session_state.role = None
 
 def login():
     st.subheader("Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    
     if st.button("Login"):
-        if username in st.session_state.users and st.session_state.users  == password:
+        if username == "admin" and password == "admin123":
             st.session_state.logged_in = True
-            st.session_state.current_user = username
-            st.session_state.role = st.session_state.users ["role"]
-            st.success(f"Welcome, {username}!")
+            st.success("Logged in as Admin!")
+            st.rerun()
+        elif username == "user" and password == "password":
+            st.session_state.logged_in = True
+            st.success("Logged in!")
             st.rerun()
         else:
-            st.error("Invalid username or password")
+            st.error("Wrong username or password")
 
 if not st.session_state.logged_in:
     login()
     st.stop()
 
-st.sidebar.success(f"Logged in as: {st.session_state.current_user} ({st.session_state.role})")
+st.sidebar.success("Logged in successfully")
 
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
-# Dashboard
-st.header("Dashboard")
+page = st.sidebar.selectbox("Menu", ["Dashboard", "Inventory", "Projects", "Pick Lists"])
 
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("Total Items", len(st.session_state.inventory))
-with col2:
-    low_stock = len(st.session_state.inventory[st.session_state.inventory["Quantity"] < st.session_state.inventory ])
-    st.metric("Low Stock", low_stock, "⚠️")
-with col3:
-    st.metric("Active Projects", len(st.session_state.projects))
-with col4:
-    st.metric("Users", len(st.session_state.users))
+if page == "Dashboard":
+    st.header("Dashboard")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Items", len(st.session_state.inventory))
+    with col2:
+        low = (st.session_state.inventory < st.session_state.inventory["Reorder Point"]).sum()
+        st.metric("Low Stock Alerts", int(low))
+    with col3:
+        st.metric("Active Projects", len(st.session_state.projects))
 
-# Navigation
-page = st.sidebar.selectbox("Go to", ["Inventory", "Projects", "Pick Lists", "Admin" if st.session_state.role == "admin" else ""])
-
-if page == "Inventory":
-    st.subheader("Inventory Management")
+elif page == "Inventory":
+    st.header("Inventory")
     st.dataframe(st.session_state.inventory, use_container_width=True)
     
     with st.expander("Add New Item"):
         item = st.text_input("Item Name")
-        qty = st.number_input("Quantity", min_value=0)
+        qty = st.number_input("Quantity", min_value=0, value=100)
         reorder = st.number_input("Reorder Point", min_value=1, value=50)
         if st.button("Add Item"):
-            new_row = pd.DataFrame({"Item": , "Quantity": , "Reorder Point": })
+            new_row = pd.DataFrame({"Item": , "Quantity": , "Unit": , "Reorder Point": })
             st.session_state.inventory = pd.concat( , ignore_index=True)
             st.success("Item added!")
             st.rerun()
 
 elif page == "Projects":
-    st.subheader("Projects")
-    project_name = st.text_input("Project Name")
+    st.header("Projects")
+    project_name = st.text_input("New Project Name")
     if st.button("Create Project"):
-        new_project = pd.DataFrame([{"Project Name": project_name, "Date Created": datetime.now().strftime("%Y-%m-%d")}])
+        new_p = pd.DataFrame([{"Project Name": project_name, "Date Created": datetime.now().strftime("%Y-%m-%d")}])
         st.session_state.projects = pd.concat( , ignore_index=True)
-        st.success(f"Project '{project_name}' created!")
+        st.success(f"Project {project_name} created!")
         st.rerun()
-
     st.dataframe(st.session_state.projects, use_container_width=True)
 
 elif page == "Pick Lists":
-    st.subheader("Create Pick List")
+    st.header("Create Pick List")
     if not st.session_state.projects.empty:
-        selected_project = st.selectbox("Select Project", st.session_state.projects )
+        proj = st.selectbox("Select Project", st.session_state.projects )
         if st.button("Generate Pick List"):
-            st.success(f"Pick list generated for {selected_project}!")
-            st.info("Materials will be deducted from inventory here in final version")
+            st.success(f"Pick list ready for {proj}!")
+            st.info("In full version this would print a list and deduct from inventory.")
     else:
-        st.warning("Create a project first")
+        st.warning("Create some projects first.")
 
-elif page == "Admin":
-    st.subheader("Admin Panel - Manage Users")
-    new_user = st.text_input("New Username")
-    new_pass = st.text_input("New Password", type="password")
-    if st.button("Add User"):
-        if new_user and new_pass:
-            st.session_state.users = {"password": new_pass, "role": "user"}
-            st.success(f"User {new_user} added!")
-            st.rerun()
+st.sidebar.button("Logout", on_click=lambda: st.session_state.update(logged_in=False))
