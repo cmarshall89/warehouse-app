@@ -88,10 +88,12 @@ elif page == "Projects":
     st.subheader("Projects")
     project_name = st.text_input("Project Name")
     if st.button("Create Project"):
-        st.session_state.projects = pd.concat( })], ignore_index=True)
-        st.success("Project created!")
+        new_project = pd.DataFrame([{"Project Name": project_name, "Date Created": datetime.now().strftime("%Y-%m-%d")}])
+        st.session_state.projects = pd.concat( , ignore_index=True)
+        st.success(f"Project '{project_name}' created!")
+        st.rerun()
 
-    st.dataframe(st.session_state.projects)
+    st.dataframe(st.session_state.projects, use_container_width=True)
 
 elif page == "Pick Lists":
     st.subheader("Create Pick List")
